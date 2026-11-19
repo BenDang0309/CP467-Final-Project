@@ -15,13 +15,13 @@ RATIO_TEST = 0.80     # Lowe's ratio for keeping a match
 THRESHOLDS = {0: 23, 1: 97, 2: 5}
 MAX_TEMPLATES_PER_CLASS = 40   # keep the N templates with the most keypoints (speed)
 
-TRAIN_IMGS = "main/Images/training images"
-VAL_IMGS = "main/Images/validation images"
-TEST_IMG = "main/Images/testing images"
-OUTPUT = "main/Images/sift output"
-CACHE = "templates.pkl"
+BASE = os.path.dirname(os.path.abspath(__file__))
 
-
+TRAIN_IMGS = os.path.join(BASE, "Images", "training images")
+VAL_IMGS = os.path.join(BASE, "Images", "validation images")
+TEST_IMG = os.path.join(BASE, "Images", "testing images")
+OUTPUT = os.path.join(BASE, "Images", "sift output")
+CACHE = os.path.join(BASE, "templates.pkl")
 
 def load_image(path):
     """Load an image and stop with a clear message if it is missing."""
