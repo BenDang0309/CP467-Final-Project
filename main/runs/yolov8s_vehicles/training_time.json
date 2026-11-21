@@ -1,0 +1,8 @@
+{
+  "training_time_s": 7773.3,
+  "epochs_max": 50,
+  "batch": 16,
+  "imgsz": 640,
+  "patience": 15,
+  "hardware": "Windows-11-10.0.26200-SP0; Intel64 Family 6 Model 183 Stepping 1, GenuineIntel; GPU: none (CPU)"
+}

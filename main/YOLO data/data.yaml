@@ -1,0 +1,8 @@
+path: "E:/Group assignment/CP467-Final-Project/main/YOLO data"
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: Car
+  1: Bus
+  2: Motorcycle

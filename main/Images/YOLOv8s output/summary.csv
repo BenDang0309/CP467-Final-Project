@@ -1,0 +1,14 @@
+metric,value
+images,213
+conf_threshold,0.25
+iou_match,0.5
+mean_inference_ms_per_image,51.57
+std_inference_ms,12.91
+hardware_test,"Windows-11-10.0.26200-SP0; Intel64 Family 6 Model 183 Stepping 1, GenuineIntel; GPU: none (CPU)"
+training_time_s,7773.3
+hardware_train,"Windows-11-10.0.26200-SP0; Intel64 Family 6 Model 183 Stepping 1, GenuineIntel; GPU: none (CPU)"
+mAP@0.5,0.8955
+macro_F1,0.8593
+overall_precision,0.8013
+overall_recall,0.875
+mean_presence_accuracy,0.9358
