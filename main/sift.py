@@ -10,15 +10,17 @@ OBJECT_NAMES = {0: "Car", 1: "Bus", 2: "Motorcycle"}
 OBJECT_COLORS = {0: (64, 156, 50), 1: (175, 221, 144), 2: (248, 155, 154)} # BGR colors of the respective bounding boxes, in the training data
 COLOR_TOLERANCE = 30 # Tolerance because of JPG compression
 
-RATIO_TEST = 0.80     # Lowe's ratio for keeping a match
+RATIO_TEST = 0.80 # Lowe's ratio for keeping a match
 
-THRESHOLDS = {0: 23, 1: 97, 2: 5}
-MAX_TEMPLATES_PER_CLASS = 40   # keep the N templates with the most keypoints (speed)
+THRESHOLDS = {0: 23, 1: 101, 2: 6}
+MAX_TEMPLATES_PER_CLASS = 40  # keep the N templates with the most keypoints
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 
 TRAIN_IMGS = os.path.join(BASE, "Images", "training images")
+TRAIN_TXTS = os.path.join(BASE, "Images", "training labels")
 VAL_IMGS = os.path.join(BASE, "Images", "validation images")
+VAL_TXTS = os.path.join(BASE, "Images", "validation labels")
 TEST_IMG = os.path.join(BASE, "Images", "testing images")
 OUTPUT = os.path.join(BASE, "Images", "sift output")
 CACHE = os.path.join(BASE, "templates.pkl")
@@ -203,6 +205,31 @@ def overlaps(a, b):
     bx, by, bw, bh = b
     return ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah
 
+def read_boxes(img_path, label_dir, W, H):
+    """Read the YOLO txt for an image from label_dir -> [(class_id, (x, y, w, h))] in pixels."""
+    name = os.path.splitext(os.path.basename(img_path))[0]
+    txt = os.path.join(label_dir, name + ".txt")
+    if not os.path.exists(txt):
+        return [] # no label file = no vehicles
+    boxes = []
+    with open(txt) as f:
+        for line in f.read().splitlines():
+            p = line.split()
+            if len(p) != 5:
+                continue
+            cls = int(float(p[0]))
+            if cls not in OBJECT_NAMES:
+                continue
+            xc, yc, bw, bh = (float(v) for v in p[1:])
+            x1 = max(int(round((xc - bw / 2) * W)), 0)
+            y1 = max(int(round((yc - bh / 2) * H)), 0)
+            x2 = min(int(round((xc + bw / 2) * W)), W)
+            y2 = min(int(round((yc + bh / 2) * H)), H)
+            if x2 - x1 < 5 or y2 - y1 < 5:
+                continue
+            boxes.append((cls, (x1, y1, x2 - x1, y2 - y1)))
+    return boxes
+
 def build_templates():
     """Return {class_id: [descriptor arrays]}. Cached on disk because this is slow."""
     if os.path.exists(CACHE):
@@ -212,12 +239,13 @@ def build_templates():
     pool = {cls: [] for cls in OBJECT_NAMES}   # cls -> [(n_keypoints, descriptors)]
     for path in list_images(TRAIN_IMGS):
         img = load_image(path)
-        boxes = extract_boxes(img)
+        H, W = img.shape[:2]
+        boxes = read_boxes(path, TRAIN_TXTS, W, H)
+        clean = remove_overlays(img)
         for idx, (cls, box) in enumerate(boxes):
-            # carve out any other box overlapping this one (e.g. the car inside the bus box)
             others = [b for j, (_, b) in enumerate(boxes) if j != idx and overlaps(box, b)]
-            kp, desc = detect_and_describe(img, box_mask(img, box, exclude=others))
-            if desc is not None and len(kp) >= 2:   # skip objects with no usable keypoints
+            kp, desc = detect_and_describe(clean, box_mask(clean, box, top_inset=5, exclude=others))
+            if desc is not None and len(kp) >= 2:
                 pool[cls].append((len(kp), desc))
 
     templates = {}
@@ -241,10 +269,9 @@ def best_matches(template_descs, desc_scene):
     return best
 
 def load_val_ground_truth(path):
-    """Return (ground-truth boxes, clean image) for one validation frame."""
     img = load_image(path)
-    boxes = extract_boxes(img)
-    return boxes, remove_overlays(img)
+    H, W = img.shape[:2]
+    return read_boxes(path, VAL_TXTS, W, H), remove_overlays(img)
 
 
 def collect_val_results():
